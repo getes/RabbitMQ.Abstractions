@@ -10,29 +10,33 @@ RabbitMQ.Abstractions follows the **Facade pattern** to hide RabbitMQ complexity
 RabbitMQ.Abstractions/
 ├── RabbitMQ.Abstractions/
 │   ├── Interfaces/
-│   │   ├── IRabbitMqClient.cs          # Main facade (aggregates all operations)
-│   │   ├── IMessagePublisher.cs        # Publish/send messages
-│   │   ├── IMessageConsumer.cs         # Subscribe/consume messages
-│   │   └── IQueueManager.cs            # Queue/exchange CRUD operations
+│   │   ├── IRabbitMqClient.cs              # Main facade (aggregates all operations)
+│   │   ├── IMessagePublisher.cs            # Publish/send messages
+│   │   ├── IMessageConsumer.cs             # Subscribe/consume messages
+│   │   └── IQueueManager.cs               # Queue/exchange CRUD operations
 │   ├── Models/
-│   │   ├── RabbitMqOptions.cs          # Connection configuration
-│   │   ├── MessageEnvelope.cs          # Message wrapper (headers, correlation, timestamp)
-│   │   └── ConsumerOptions.cs          # Consumer behavior settings
+│   │   ├── RabbitMqOptions.cs              # Connection configuration
+│   │   ├── MessageEnvelope.cs              # Message wrapper (headers, correlation, timestamp)
+│   │   ├── MessageProperties.cs            # Publish-time message properties
+│   │   └── ConsumerOptions.cs              # Consumer behavior settings
 │   ├── Implementation/
-│   │   ├── RabbitMqClient.cs           # Facade implementation
-│   │   ├── MessagePublisher.cs         # Publisher logic
-│   │   ├── MessageConsumer.cs          # Consumer logic
-│   │   └── QueueManager.cs             # Queue/exchange management
+│   │   ├── IChannelProvider.cs             # Internal channel lifecycle contract
+│   │   ├── ChannelProvider.cs              # Connection/channel management
+│   │   ├── RabbitMqClient.cs              # Facade implementation
+│   │   ├── MessagePublisher.cs             # Publisher logic
+│   │   ├── MessageConsumer.cs              # Consumer logic with retry
+│   │   └── QueueManager.cs                # Queue/exchange management
 │   ├── Extensions/
-│   │   └── ServiceCollectionExtensions.cs  # DI registration
+│   │   └── ServiceCollectionExtensions.cs  # DI registration (.AddRabbitMq)
 │   ├── Serialization/
-│   │   └── IMessageSerializer.cs       # Pluggable serialization contract
+│   │   ├── IMessageSerializer.cs           # Pluggable serialization contract
+│   │   └── JsonMessageSerializer.cs        # Default System.Text.Json implementation
 │   └── RabbitMQ.Abstractions.csproj
 ├── tests/
 │   └── RabbitMQ.Abstractions.Tests/
 │       └── RabbitMQ.Abstractions.Tests.csproj
 ├── .gitignore
-├── RabbitMQ.Abstractions.sln
+├── RabbitMQ.Abstractions.slnx
 ├── README.md
 └── TECHNICAL.md
 ```
@@ -220,7 +224,60 @@ services.AddRabbitMq(options => { ... })
     .WithSerializer<MyCustomSerializer>();
 ```
 
-## Future Considerations (NuGet Package)
+## Roadmap
+
+### v1.1 — RabbitMQ Management API Integration
+
+A separate interface (`IRabbitMqManagement`) to query the RabbitMQ Management HTTP API (port 15672). This provides read access to broker metadata that isn't available through the AMQP protocol.
+
+**Planned interface:**
+
+```csharp
+public interface IRabbitMqManagement
+{
+    Task<IEnumerable<QueueInfo>> ListQueuesAsync(string? vhost = null, CancellationToken cancellationToken = default);
+    Task<QueueInfo?> GetQueueAsync(string queue, string? vhost = null, CancellationToken cancellationToken = default);
+    Task<IEnumerable<ExchangeInfo>> ListExchangesAsync(string? vhost = null, CancellationToken cancellationToken = default);
+    Task<IEnumerable<ConnectionInfo>> ListConnectionsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<ChannelInfo>> ListChannelsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<ConsumerInfo>> ListConsumersAsync(string? vhost = null, CancellationToken cancellationToken = default);
+    Task<BrokerOverview> GetOverviewAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<VirtualHostInfo>> ListVirtualHostsAsync(CancellationToken cancellationToken = default);
+}
+```
+
+**Planned models:**
+
+- `QueueInfo` — name, vhost, durable, messages count, consumers count, state, memory usage
+- `ExchangeInfo` — name, vhost, type, durable, auto_delete
+- `ConnectionInfo` — name, user, host, port, state, channels count
+- `ChannelInfo` — name, connection, consumer count, prefetch, state
+- `ConsumerInfo` — consumer tag, queue, channel, ack required
+- `BrokerOverview` — cluster name, version, message rates, queue totals
+- `VirtualHostInfo` — name, messages, tracing
+
+**Configuration:**
+
+```csharp
+builder.Services.AddRabbitMq(options => { /* AMQP config */ })
+    .WithManagementApi(management =>
+    {
+        management.BaseUrl = "http://rabbitmq-server:15672";
+        management.UserName = "admin";      // May differ from AMQP credentials
+        management.Password = "admin_pass";
+    });
+```
+
+**Dependencies to add:**
+- `System.Net.Http` (HttpClient for REST calls)
+- No additional NuGet packages required
+
+**Design notes:**
+- Separate credentials from AMQP (management API may use different auth)
+- Read-only operations only — no destructive management actions via this interface
+- `HttpClient` registered via `IHttpClientFactory` for proper lifecycle management
+
+### v1.2 — NuGet Package
 
 The `.csproj` is pre-configured with NuGet metadata for future packaging:
 - `PackageId`: RabbitMQ.Abstractions
