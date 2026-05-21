@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/tests/">
+    <Project Path="tests/RabbitMQ.Abstractions.Management.Tests/RabbitMQ.Abstractions.Management.Tests.csproj" />
     <Project Path="tests/RabbitMQ.Abstractions.Tests/RabbitMQ.Abstractions.Tests.csproj" />
   </Folder>
+  <Project Path="RabbitMQ.Abstractions.Management/RabbitMQ.Abstractions.Management.csproj" />
   <Project Path="RabbitMQ.Abstractions/RabbitMQ.Abstractions.csproj" />
 </Solution>
