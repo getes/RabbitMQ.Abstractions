@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>RabbitMQ.Abstractions</RootNamespace>
+
+    <!-- NuGet Package Metadata (for future packaging) -->
+    <PackageId>RabbitMQ.Abstractions</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>getes</Authors>
+    <Description>Clean abstraction layer over RabbitMQ for .NET applications with dependency injection support.</Description>
+    <PackageTags>rabbitmq;messaging;queue;abstraction;amqp</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/getes/RabbitMQ.Abstractions</RepositoryUrl>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.8" />
+    <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
+  </ItemGroup>
+
+</Project>
