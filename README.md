@@ -309,11 +309,139 @@ builder.Services.AddRabbitMq(options =>
 });
 ```
 
+## Management API (separate DLL)
+
+The `RabbitMQ.Abstractions.Management` library provides read-only access to the RabbitMQ Management HTTP API (port 15672). It's a **completely independent library** — no dependency on the core AMQP library. Import one or both depending on your needs.
+
+### Installation
+
+Add a reference to `RabbitMQ.Abstractions.Management.dll` in your project.
+
+### Registration
+
+```csharp
+using RabbitMQ.Abstractions.Management.Extensions;
+
+builder.Services.AddRabbitMqManagement(options =>
+{
+    options.BaseUrl = "http://rabbitmq-server:15672";
+    options.UserName = "admin";           // Management API credentials (may differ from AMQP)
+    options.Password = "admin_password";
+    options.DefaultVirtualHost = "/";
+    options.Timeout = TimeSpan.FromSeconds(30);
+});
+```
+
+> **Note:** Management API credentials may differ from AMQP credentials. The Management API requires the `management` user tag in RabbitMQ.
+
+### Usage
+
+Inject `IRabbitMqManagement` wherever you need broker visibility:
+
+```csharp
+using RabbitMQ.Abstractions.Management.Interfaces;
+using RabbitMQ.Abstractions.Management.Models;
+
+public class MonitoringService
+{
+    private readonly IRabbitMqManagement _management;
+
+    public MonitoringService(IRabbitMqManagement management)
+    {
+        _management = management;
+    }
+
+    public async Task CheckBrokerHealthAsync()
+    {
+        // Broker overview (version, cluster, totals)
+        var overview = await _management.GetOverviewAsync();
+        Console.WriteLine($"RabbitMQ {overview.RabbitMqVersion}, Cluster: {overview.ClusterName}");
+        Console.WriteLine($"Total queues: {overview.ObjectTotals.Queues}");
+        Console.WriteLine($"Total messages: {overview.QueueTotals.Messages}");
+
+        // List all queues
+        var queues = await _management.ListQueuesAsync();
+        foreach (var queue in queues)
+        {
+            Console.WriteLine($"  Queue: {queue.Name}, Messages: {queue.Messages}, Consumers: {queue.Consumers}");
+        }
+
+        // List all exchanges
+        var exchanges = await _management.ListExchangesAsync();
+
+        // List bindings for a specific queue
+        var bindings = await _management.GetQueueBindingsAsync("orders-queue");
+
+        // Get details for a specific queue
+        var queueInfo = await _management.GetQueueAsync("orders-queue");
+        if (queueInfo != null)
+        {
+            Console.WriteLine($"State: {queueInfo.State}, Memory: {queueInfo.Memory} bytes");
+        }
+
+        // List active connections
+        var connections = await _management.ListConnectionsAsync();
+
+        // List consumers
+        var consumers = await _management.ListConsumersAsync();
+
+        // List virtual hosts
+        var vhosts = await _management.ListVirtualHostsAsync();
+    }
+}
+```
+
+### Available Operations
+
+| Method | Description |
+|--------|-------------|
+| `GetOverviewAsync()` | Broker version, cluster name, object totals, queue totals |
+| `ListQueuesAsync(vhost?)` | All queues (optionally filtered by vhost) |
+| `GetQueueAsync(name, vhost?)` | Single queue details (returns null if not found) |
+| `ListExchangesAsync(vhost?)` | All exchanges |
+| `GetExchangeAsync(name, vhost?)` | Single exchange details |
+| `ListBindingsAsync(vhost?)` | All bindings |
+| `GetQueueBindingsAsync(queue, vhost?)` | Bindings for a specific queue |
+| `ListConnectionsAsync()` | All active connections |
+| `ListConsumersAsync(vhost?)` | All active consumers |
+| `ListVirtualHostsAsync()` | All virtual hosts |
+
+### Configuration Reference
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `BaseUrl` | `string` | `"http://localhost:15672"` | Management API base URL |
+| `UserName` | `string` | `"guest"` | API username |
+| `Password` | `string` | `"guest"` | API password |
+| `DefaultVirtualHost` | `string` | `"/"` | Default vhost for single-resource queries |
+| `Timeout` | `TimeSpan` | `30s` | HTTP request timeout |
+
+### Using both libraries together
+
+```csharp
+// Core AMQP operations
+builder.Services.AddRabbitMq(options =>
+{
+    options.HostName = "rabbitmq-server";
+    options.UserName = "app_user";
+    options.Password = "app_password";
+});
+
+// Management API (independent, separate credentials)
+builder.Services.AddRabbitMqManagement(options =>
+{
+    options.BaseUrl = "http://rabbitmq-server:15672";
+    options.UserName = "admin";
+    options.Password = "admin_password";
+});
+```
+
 ## Requirements
 
 - .NET 9.0 or later
 - RabbitMQ server instance (3.x or later)
 - Microsoft.Extensions.DependencyInjection (included in ASP.NET Core; add manually for console apps)
+- For Management API: RabbitMQ Management plugin enabled (enabled by default in `rabbitmq:3-management` Docker image)
 
 ## License
 

@@ -8,7 +8,7 @@ RabbitMQ.Abstractions follows the **Facade pattern** to hide RabbitMQ complexity
 
 ```
 RabbitMQ.Abstractions/
-├── RabbitMQ.Abstractions/
+├── RabbitMQ.Abstractions/                          # Core AMQP library (DLL)
 │   ├── Interfaces/
 │   │   ├── IRabbitMqClient.cs              # Main facade (aggregates all operations)
 │   │   ├── IMessagePublisher.cs            # Publish/send messages
@@ -32,9 +32,28 @@ RabbitMQ.Abstractions/
 │   │   ├── IMessageSerializer.cs           # Pluggable serialization contract
 │   │   └── JsonMessageSerializer.cs        # Default System.Text.Json implementation
 │   └── RabbitMQ.Abstractions.csproj
+├── RabbitMQ.Abstractions.Management/               # Management HTTP API library (DLL)
+│   ├── Interfaces/
+│   │   └── IRabbitMqManagement.cs          # Read-only broker admin operations
+│   ├── Models/
+│   │   ├── ManagementOptions.cs            # HTTP API connection config
+│   │   ├── QueueInfo.cs                    # Queue metadata
+│   │   ├── ExchangeInfo.cs                 # Exchange metadata
+│   │   ├── BindingInfo.cs                  # Binding metadata
+│   │   ├── ConsumerInfo.cs                 # Consumer metadata
+│   │   ├── ConnectionInfo.cs               # Connection metadata
+│   │   ├── VirtualHostInfo.cs              # VHost metadata
+│   │   └── BrokerOverview.cs               # Cluster/version/totals
+│   ├── Implementation/
+│   │   └── RabbitMqManagementClient.cs     # HttpClient-based implementation
+│   ├── Extensions/
+│   │   └── ServiceCollectionExtensions.cs  # DI registration (.AddRabbitMqManagement)
+│   └── RabbitMQ.Abstractions.Management.csproj
 ├── tests/
-│   └── RabbitMQ.Abstractions.Tests/
-│       └── RabbitMQ.Abstractions.Tests.csproj
+│   ├── RabbitMQ.Abstractions.Tests/
+│   │   └── RabbitMQ.Abstractions.Tests.csproj
+│   └── RabbitMQ.Abstractions.Management.Tests/
+│       └── RabbitMQ.Abstractions.Management.Tests.csproj
 ├── .gitignore
 ├── RabbitMQ.Abstractions.slnx
 ├── README.md
