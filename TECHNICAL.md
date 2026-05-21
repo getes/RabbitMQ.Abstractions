@@ -224,7 +224,60 @@ services.AddRabbitMq(options => { ... })
     .WithSerializer<MyCustomSerializer>();
 ```
 
-## Future Considerations (NuGet Package)
+## Roadmap
+
+### v1.1 — RabbitMQ Management API Integration
+
+A separate interface (`IRabbitMqManagement`) to query the RabbitMQ Management HTTP API (port 15672). This provides read access to broker metadata that isn't available through the AMQP protocol.
+
+**Planned interface:**
+
+```csharp
+public interface IRabbitMqManagement
+{
+    Task<IEnumerable<QueueInfo>> ListQueuesAsync(string? vhost = null, CancellationToken cancellationToken = default);
+    Task<QueueInfo?> GetQueueAsync(string queue, string? vhost = null, CancellationToken cancellationToken = default);
+    Task<IEnumerable<ExchangeInfo>> ListExchangesAsync(string? vhost = null, CancellationToken cancellationToken = default);
+    Task<IEnumerable<ConnectionInfo>> ListConnectionsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<ChannelInfo>> ListChannelsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<ConsumerInfo>> ListConsumersAsync(string? vhost = null, CancellationToken cancellationToken = default);
+    Task<BrokerOverview> GetOverviewAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<VirtualHostInfo>> ListVirtualHostsAsync(CancellationToken cancellationToken = default);
+}
+```
+
+**Planned models:**
+
+- `QueueInfo` — name, vhost, durable, messages count, consumers count, state, memory usage
+- `ExchangeInfo` — name, vhost, type, durable, auto_delete
+- `ConnectionInfo` — name, user, host, port, state, channels count
+- `ChannelInfo` — name, connection, consumer count, prefetch, state
+- `ConsumerInfo` — consumer tag, queue, channel, ack required
+- `BrokerOverview` — cluster name, version, message rates, queue totals
+- `VirtualHostInfo` — name, messages, tracing
+
+**Configuration:**
+
+```csharp
+builder.Services.AddRabbitMq(options => { /* AMQP config */ })
+    .WithManagementApi(management =>
+    {
+        management.BaseUrl = "http://rabbitmq-server:15672";
+        management.UserName = "admin";      // May differ from AMQP credentials
+        management.Password = "admin_pass";
+    });
+```
+
+**Dependencies to add:**
+- `System.Net.Http` (HttpClient for REST calls)
+- No additional NuGet packages required
+
+**Design notes:**
+- Separate credentials from AMQP (management API may use different auth)
+- Read-only operations only — no destructive management actions via this interface
+- `HttpClient` registered via `IHttpClientFactory` for proper lifecycle management
+
+### v1.2 — NuGet Package
 
 The `.csproj` is pre-configured with NuGet metadata for future packaging:
 - `PackageId`: RabbitMQ.Abstractions
