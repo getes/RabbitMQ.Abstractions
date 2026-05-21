@@ -10,29 +10,33 @@ RabbitMQ.Abstractions follows the **Facade pattern** to hide RabbitMQ complexity
 RabbitMQ.Abstractions/
 ├── RabbitMQ.Abstractions/
 │   ├── Interfaces/
-│   │   ├── IRabbitMqClient.cs          # Main facade (aggregates all operations)
-│   │   ├── IMessagePublisher.cs        # Publish/send messages
-│   │   ├── IMessageConsumer.cs         # Subscribe/consume messages
-│   │   └── IQueueManager.cs            # Queue/exchange CRUD operations
+│   │   ├── IRabbitMqClient.cs              # Main facade (aggregates all operations)
+│   │   ├── IMessagePublisher.cs            # Publish/send messages
+│   │   ├── IMessageConsumer.cs             # Subscribe/consume messages
+│   │   └── IQueueManager.cs               # Queue/exchange CRUD operations
 │   ├── Models/
-│   │   ├── RabbitMqOptions.cs          # Connection configuration
-│   │   ├── MessageEnvelope.cs          # Message wrapper (headers, correlation, timestamp)
-│   │   └── ConsumerOptions.cs          # Consumer behavior settings
+│   │   ├── RabbitMqOptions.cs              # Connection configuration
+│   │   ├── MessageEnvelope.cs              # Message wrapper (headers, correlation, timestamp)
+│   │   ├── MessageProperties.cs            # Publish-time message properties
+│   │   └── ConsumerOptions.cs              # Consumer behavior settings
 │   ├── Implementation/
-│   │   ├── RabbitMqClient.cs           # Facade implementation
-│   │   ├── MessagePublisher.cs         # Publisher logic
-│   │   ├── MessageConsumer.cs          # Consumer logic
-│   │   └── QueueManager.cs             # Queue/exchange management
+│   │   ├── IChannelProvider.cs             # Internal channel lifecycle contract
+│   │   ├── ChannelProvider.cs              # Connection/channel management
+│   │   ├── RabbitMqClient.cs              # Facade implementation
+│   │   ├── MessagePublisher.cs             # Publisher logic
+│   │   ├── MessageConsumer.cs              # Consumer logic with retry
+│   │   └── QueueManager.cs                # Queue/exchange management
 │   ├── Extensions/
-│   │   └── ServiceCollectionExtensions.cs  # DI registration
+│   │   └── ServiceCollectionExtensions.cs  # DI registration (.AddRabbitMq)
 │   ├── Serialization/
-│   │   └── IMessageSerializer.cs       # Pluggable serialization contract
+│   │   ├── IMessageSerializer.cs           # Pluggable serialization contract
+│   │   └── JsonMessageSerializer.cs        # Default System.Text.Json implementation
 │   └── RabbitMQ.Abstractions.csproj
 ├── tests/
 │   └── RabbitMQ.Abstractions.Tests/
 │       └── RabbitMQ.Abstractions.Tests.csproj
 ├── .gitignore
-├── RabbitMQ.Abstractions.sln
+├── RabbitMQ.Abstractions.slnx
 ├── README.md
 └── TECHNICAL.md
 ```
